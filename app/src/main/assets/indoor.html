@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>My first three.js app</title>
+        <style>
+            body { margin: 0;}
+        </style>
+    </head>
+    <body>
+        <script src="js/three.js"></script>
+        <script>
+			class PriorityQueue{
+				constructor(comp){
+					this.heap = [];
+					this.comp = comp;
+					if(comp == undefined){
+						this.comp = (a,b) =>{
+							return a - b;
+						}
+					}
+				}
+				removeMin(){
+					if(this.isEmpty()){
+						return null;
+					}
+					let min = this.heap[0];
+					let last = this.heap.pop();
+					if(this.size() != 0){
+						this.heap[0] = last;
+						this.downHeap(0);
+					}
+					return min;
+				}
+				downHeap(pos){
+					while(this.isInternal(pos)){
+						let s = null;
+			
+						//왼쪽과 오른쪽 자식중에 작은 것을 s에 넣는다.
+						if(!this.hasRight(pos)){
+							s = this.left(pos);
+						}else if(this.comp(this.heap[this.left(pos)], this.heap[this.right(pos)])<= 0){
+							s = this.left(pos);
+						}else{
+							s = this.right(pos);
+						}
+						if(this.comp(this.heap[s], this.heap[pos]) < 0){
+							this.swap(pos, s);
+							pos = s;
+						}else{
+							break;
+						}
+					}
+				}
+				upHeap(pos){
+					while(!this.isRoot(pos)){
+						let p = this.parent(pos);
+						if(this.comp(this.heap[p], this.heap[pos])<= 0){
+							break;
+						}
+						this.swap(p, pos);
+						pos = p;
+					}
+				}
+				swap(x, y){
+					let tmp = this.heap[x];
+					this.heap[x] = this.heap[y];
+					this.heap[y] = tmp;
+				}
+				parent(pos){
+					return parseInt((pos - 1)/2);
+				}
+				left(pos){
+					return 2*pos + 1;
+				}
+				right(pos){
+					return 2*pos + 2;
+				}
+				size(){
+					return this.heap.length;
+				}
+				isInternal(pos){
+					return this.hasLeft(pos) ;
+				}
+				isRoot(pos){
+					if(pos == 0) return true;
+					return false;
+				}
+				hasLeft(pos){
+					if(this.left(pos) < this.size()){
+						return true;
+					}
+					return false;
+				}
+				hasRight(pos){
+					if(this.right(pos) < this.size()){
+						return true;
+					}
+					return false;
+				}
+				isEmpty(){
+					return this.heap.length == 0;
+				}
+				insert(value){
+					this.heap.push(value);
+					this.upHeap(this.size() - 1);
+				}
+				min(){
+					return this.heap[0];
+				}
+			}
+
+			class Node
+			{
+				constructor(type, name, coord)
+				{
+					this.type = type;
+					this.name = name;
+					this.coord = coord;
+					this.adjList = [];
+				}
+
+				addAdj(node)
+				{
+					this.adjList.push(node);
+					node.adjList.push(this);
+				}
+			}
+
+			const scaleFactor = 20.0;
+			const ratio = 1800.0 / 1160
+
+			var nodes = [];
+
+			const x_unit = scaleFactor * ratio / 20;
+			const z_unit = scaleFactor / 20;
+			nodes.push(new Node("way", "w1-1", new THREE.Vector3(3.1 * x_unit, 0, 2.5 * z_unit)));
+			nodes.push(new Node("room", "r1-특수촬영실", new THREE.Vector3(2.2 * x_unit, 0, 2.5 * z_unit)));
+
+			nodes.push(new Node("way", "w1-2", new THREE.Vector3(3.1 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("way", "w1-3", new THREE.Vector3(4.2 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("way", "w1-4", new THREE.Vector3(5.4 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("way", "w1-5", new THREE.Vector3(6.6 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("way", "w1-6", new THREE.Vector3(9 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("way", "w1-7", new THREE.Vector3(15 * x_unit, 0, 5 * z_unit)));
+			nodes.push(new Node("way", "w1-8", new THREE.Vector3(16 * x_unit, 0, 5 * z_unit)));
+			nodes.push(new Node("stair", "s1-2", new THREE.Vector3(17.3 * x_unit, 0, 5 * z_unit)));
+			nodes.push(new Node("room", "r1-CT촬영실", new THREE.Vector3(2.2 * x_unit, 0, 5.7 * z_unit)));
+			nodes.push(new Node("room", "r1-촬영실1", new THREE.Vector3(4.2 * x_unit, 0, 3.8 * z_unit)));
+			nodes.push(new Node("room", "r1-영상의학과", new THREE.Vector3(5.4 * x_unit, 0, 3.8 * z_unit)));
+			nodes.push(new Node("room", "r1-촬영실2", new THREE.Vector3(6.6 * x_unit, 0, 3.8 * z_unit)));
+			nodes.push(new Node("room", "r1-약국", new THREE.Vector3(9 * x_unit, 0, 3.8 * z_unit)));
+			nodes.push(new Node("room", "r1-정형외과진료실", new THREE.Vector3(15 * x_unit, 0, 3.1 * z_unit)));
+			nodes.push(new Node("room", "r1-석고실", new THREE.Vector3(16 * x_unit, 0, 3.1 * z_unit)));
+
+			nodes.push(new Node("way", "w1-9", new THREE.Vector3(5 * x_unit, 0, 7 * z_unit)));
+			nodes.push(new Node("way", "w1-10", new THREE.Vector3(9 * x_unit, 0, 7 * z_unit)));
+			nodes.push(new Node("way", "w1-11", new THREE.Vector3(15 * x_unit, 0, 7 * z_unit)));
+			nodes.push(new Node("way", "w1-12", new THREE.Vector3(16.5 * x_unit, 0, 7 * z_unit)));
+			nodes.push(new Node("elevator", "e1-4", new THREE.Vector3(17.3 * x_unit, 0, 7 * z_unit)));
+			nodes.push(new Node("room", "r1-주사실", new THREE.Vector3(15 * x_unit, 0, 8.4 * z_unit)));
+			nodes.push(new Node("room", "r1-진료실", new THREE.Vector3(16.5 * x_unit, 0, 8.4 * z_unit)));
+
+			nodes.push(new Node("way", "w1-13", new THREE.Vector3(5 * x_unit, 0, 9 * z_unit)));
+			nodes.push(new Node("way", "w1-14", new THREE.Vector3(9 * x_unit, 0, 9 * z_unit)));
+			nodes.push(new Node("elevator", "e1-1", new THREE.Vector3(10 * x_unit, 0, 9 * z_unit)));
+			nodes.push(new Node("room", "r1-원무과", new THREE.Vector3(4 * x_unit, 0, 9 * z_unit)));
+
+			nodes.push(new Node("way", "w1-15", new THREE.Vector3(9 * x_unit, 0, 10.5 * z_unit)));
+			nodes.push(new Node("elevator", "e1-2", new THREE.Vector3(10 * x_unit, 0, 10.5 * z_unit)));
+
+			nodes.push(new Node("way", "w1-16", new THREE.Vector3(9 * x_unit, 0, 12.5 * z_unit)));
+			nodes.push(new Node("way", "w1-17", new THREE.Vector3(11.95 * x_unit, 0, 12.5 * z_unit)));
+			nodes.push(new Node("way", "w1-18", new THREE.Vector3(13 * x_unit, 0, 12.5 * z_unit)));
+			nodes.push(new Node("elevator", "e1-3", new THREE.Vector3(11.95 * x_unit, 0, 10.7 * z_unit)));
+			nodes.push(new Node("stair", "s1-1", new THREE.Vector3(13 * x_unit, 0, 11 * z_unit)));
+
+			nodes.push(new Node("way", "w1-19", new THREE.Vector3(13 * x_unit, 0, 14.7 * z_unit)));
+			nodes.push(new Node("room", "r1-화장실", new THREE.Vector3(12 * x_unit, 0, 14.7 * z_unit)));
+
+			nodes.push(new Node("way", "w1-20", new THREE.Vector3(6 * x_unit, 0, 16.7 * z_unit)));
+			nodes.push(new Node("room", "r1-편의점", new THREE.Vector3(6 * x_unit, 0, 18 * z_unit)));
+
+			nodes.push(new Node("way", "w1-21", new THREE.Vector3(13 * x_unit, 0, 17.3 * z_unit)));
+			nodes.push(new Node("way", "w1-22", new THREE.Vector3(14 * x_unit, 0, 17.3 * z_unit)));
+			nodes.push(new Node("room", "r1-야간원무과", new THREE.Vector3(12 * x_unit, 0, 17.3 * z_unit)));
+			nodes.push(new Node("room", "r1-야간진료실", new THREE.Vector3(15 * x_unit, 0, 17.3 * z_unit)));
+
+
+
+			var curNode = nodes.find(function(node){return node.name == "w1-1"});
+			var targetNode = nodes.find(function(node){return node.name == "w1-2"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-1"});
+			targetNode = nodes.find(function(node){return node.name == "r1-특수촬영실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-2"});
+			targetNode = nodes.find(function(node){return node.name == "w1-3"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-2"});
+			targetNode = nodes.find(function(node){return node.name == "r1-CT촬영실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-3"});
+			targetNode = nodes.find(function(node){return node.name == "w1-4"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-3"});
+			targetNode = nodes.find(function(node){return node.name == "w1-9"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-3"});
+			targetNode = nodes.find(function(node){return node.name == "r1-촬영실1"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-4"});
+			targetNode = nodes.find(function(node){return node.name == "w1-5"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-4"});
+			targetNode = nodes.find(function(node){return node.name == "w1-9"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-4"});
+			targetNode = nodes.find(function(node){return node.name == "r1-영상의학과"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-5"});
+			targetNode = nodes.find(function(node){return node.name == "w1-6"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-5"});
+			targetNode = nodes.find(function(node){return node.name == "r1-촬영실2"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-6"});
+			targetNode = nodes.find(function(node){return node.name == "w1-7"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-6"});
+			targetNode = nodes.find(function(node){return node.name == "w1-10"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-6"});
+			targetNode = nodes.find(function(node){return node.name == "r1-약국"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-7"});
+			targetNode = nodes.find(function(node){return node.name == "w1-8"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-7"});
+			targetNode = nodes.find(function(node){return node.name == "w1-11"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-7"});
+			targetNode = nodes.find(function(node){return node.name == "w1-12"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-7"});
+			targetNode = nodes.find(function(node){return node.name == "r1-정형외과진료실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-8"});
+			targetNode = nodes.find(function(node){return node.name == "w1-11"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-8"});
+			targetNode = nodes.find(function(node){return node.name == "w1-12"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-8"});
+			targetNode = nodes.find(function(node){return node.name == "r1-석고실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-8"});
+			targetNode = nodes.find(function(node){return node.name == "s1-2"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-9"});
+			targetNode = nodes.find(function(node){return node.name == "w1-10"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-9"});
+			targetNode = nodes.find(function(node){return node.name == "w1-13"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-10"});
+			targetNode = nodes.find(function(node){return node.name == "w1-11"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-10"});
+			targetNode = nodes.find(function(node){return node.name == "w1-14"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-11"});
+			targetNode = nodes.find(function(node){return node.name == "w1-12"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-11"});
+			targetNode = nodes.find(function(node){return node.name == "r1-주사실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-12"});
+			targetNode = nodes.find(function(node){return node.name == "r1-진료실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-12"});
+			targetNode = nodes.find(function(node){return node.name == "e1-4"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-13"});
+			targetNode = nodes.find(function(node){return node.name == "w1-14"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-13"});
+			targetNode = nodes.find(function(node){return node.name == "w1-20"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-13"});
+			targetNode = nodes.find(function(node){return node.name == "w1-16"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-13"});
+			targetNode = nodes.find(function(node){return node.name == "r1-원무과"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-14"});
+			targetNode = nodes.find(function(node){return node.name == "w1-15"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-14"});
+			targetNode = nodes.find(function(node){return node.name == "e1-1"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-15"});
+			targetNode = nodes.find(function(node){return node.name == "w1-16"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-15"});
+			targetNode = nodes.find(function(node){return node.name == "e1-2"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-16"});
+			targetNode = nodes.find(function(node){return node.name == "w1-17"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-16"});
+			targetNode = nodes.find(function(node){return node.name == "w1-20"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-17"});
+			targetNode = nodes.find(function(node){return node.name == "w1-18"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-17"});
+			targetNode = nodes.find(function(node){return node.name == "e1-3"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-18"});
+			targetNode = nodes.find(function(node){return node.name == "w1-19"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-18"});
+			targetNode = nodes.find(function(node){return node.name == "s1-1"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-19"});
+			targetNode = nodes.find(function(node){return node.name == "w1-21"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-19"});
+			targetNode = nodes.find(function(node){return node.name == "w1-22"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-19"});
+			targetNode = nodes.find(function(node){return node.name == "r1-화장실"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-20"});
+			targetNode = nodes.find(function(node){return node.name == "r1-편의점"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-21"});
+			targetNode = nodes.find(function(node){return node.name == "w1-22"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-21"});
+			targetNode = nodes.find(function(node){return node.name == "r1-야간원무과"});
+			curNode.addAdj(targetNode);
+			curNode = nodes.find(function(node){return node.name == "w1-22"});
+			targetNode = nodes.find(function(node){return node.name == "r1-야간진료실"});
+			curNode.addAdj(targetNode);
+
+
+            const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight , 0.1, 1000 );
+
+			const renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			const geometry = new THREE.SphereGeometry();
+			const wayMesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x909090 } ) );
+			const roomMesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x900000 } ) );
+			const stairMesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x909000 } ) );
+			const elevatorMesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x009000 } ) );
+			const adjMaterial = new THREE.LineBasicMaterial( {color:0x000000});
+
+			nodes.forEach((node, index, array) => 
+			{
+				var mesh;
+				if (node.type == "way") { mesh = wayMesh.clone(); }
+				else if (node.type == "room") { mesh = roomMesh.clone(); }
+				else if (node.type == "stair") { mesh = stairMesh.clone(); }
+				else if (node.type == "elevator") { mesh = elevatorMesh.clone(); }
+				scene.add(mesh);
+				mesh.scale.set(0.1, 0.05, 0.1);
+				const scale = 1;
+				mesh.position.set(node.coord.x * scale, node.coord.y, node.coord.z * scale);
+
+				for(var i = 0; i < node.adjList.length; i++)
+				{
+					const points = [];
+					const start = node.coord.clone().add(new THREE.Vector3(0, 0.01, 0));
+					const end = node.adjList[i].coord.clone().add(new THREE.Vector3(0, 0.01, 0));
+					points.push(start);
+					points.push(end);
+					const lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
+					const line = new THREE.Line(lineGeometry, adjMaterial);
+					scene.add(line);
+				}
+			});
+
+			camera.position.x = scaleFactor * ratio / 2;
+			camera.position.y = 10;
+			camera.position.z = scaleFactor / 2;
+			camera.lookAt(scaleFactor * ratio / 2, 0, scaleFactor / 2);
+			camera.rotation.z = 0
+
+			const map = new THREE.TextureLoader().load("./img_floor_1.gif");
+			var material = new THREE.SpriteMaterial( {map: map, color: 0xffffff});
+			var sprite = new THREE.Sprite(material);
+			scene.add(sprite);
+
+			sprite.scale.set(ratio * scaleFactor, 1 * scaleFactor, 1);
+			sprite.position.set(scaleFactor * ratio / 2, 0, scaleFactor / 2);
+/*
+			// draw line
+			const lineMaterial = new THREE.LineBasicMaterial( {color:0xff0000});
+			for (var i = 1; i < 20; i++)
+			{
+				var points = [];
+				points.push(new THREE.Vector3(0, 0.01, scaleFactor * i / 20));
+				points.push(new THREE.Vector3(scaleFactor * ratio, 0.01, scaleFactor * i / 20));
+				var lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
+				var line = new THREE.Line(lineGeometry, lineMaterial);
+				scene.add(line);
+
+				points = [];
+				points.push(new THREE.Vector3(scaleFactor * ratio * i / 20, 0.01, 0));
+				points.push(new THREE.Vector3(scaleFactor * ratio * i / 20, 0.01, scaleFactor));
+				lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
+				line = new THREE.Line(lineGeometry, lineMaterial);
+				scene.add(line);
+			}
+*/
+			var pq = new PriorityQueue((a, b) => {b[0] - a[0]});
+			const distance = {};
+			const pi = {};
+			const inf = 1000000000;
+
+			nodes.forEach((node, index, array) => {
+				distance[node.name] = inf;
+				pi[node.name] = null;
+			});
+			const start = nodes.find(function(node){return node.name == "r1-편의점"});
+			distance[start.name] = 0;
+			pq.insert([0, start]);
+
+			while (!pq.isEmpty())
+			{
+				const top = pq.removeMin();
+				const cost = top[0];
+				const node = top[1];
+				if (distance[node.name] < cost)
+				{
+					continue;
+				}
+
+				for (var i = 0; i < node.adjList.length; i++)
+				{
+					const adjNode = node.adjList[i];
+					const nextDist = cost + node.coord.distanceTo(adjNode.coord);
+					if (distance[adjNode.name] > nextDist)
+					{
+						distance[adjNode.name] = nextDist;
+						pq.insert([nextDist, adjNode]);
+						pi[adjNode.name] = node;
+					}
+				}
+			}
+			
+			var path = [];
+			var end = nodes.find(function(node){return node.name == "r1-특수촬영실"});
+			path.push(end);
+			while (pi[end.name] != null)
+			{
+				end = pi[end.name];
+				path.push(end);
+			}
+			path = path.reverse();
+
+			const pathMaterial = new THREE.LineBasicMaterial( {color:0xff1111});
+			for (var i = 0; i < path.length - 1; i++)
+			{
+				const points = [];
+				const start = path[i].coord.clone().add(new THREE.Vector3(0, 0.01, 0));
+				const end = path[i + 1].coord.clone().add(new THREE.Vector3(0, 0.01, 0));
+				points.push(start);
+				points.push(end);
+				const lineGeometry = new THREE.BufferGeometry().setFromPoints( points );
+				const line = new THREE.Line(lineGeometry, pathMaterial);
+				scene.add(line);
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+
+				renderer.render( scene, camera );
+			};
+
+			animate();
+        </script>
+    </body>
+</html>
