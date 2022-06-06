@@ -10,7 +10,10 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentDashboardBinding;
+
+import net.daum.mf.map.api.MapView;
 
 public class DashboardFragment extends Fragment {
 
@@ -18,20 +21,21 @@ public class DashboardFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        DashboardViewModel dashboardViewModel =
-                new ViewModelProvider(this).get(DashboardViewModel.class);
+//        DashboardViewModel dashboardViewModel =
+//                new ViewModelProvider(this).get(DashboardViewModel.class);
+//
+//        binding = FragmentDashboardBinding.inflate(inflater, container, false);
+//        View root = binding.getRoot();
+//
+//        final TextView textView = binding.textDashboard;
+//        dashboardViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
 
-        binding = FragmentDashboardBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+        MapView mapView = new MapView(getActivity());
 
-        final TextView textView = binding.textDashboard;
-        dashboardViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
-        return root;
-    }
+        View v = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+        ViewGroup mapViewContainer = (ViewGroup) v.findViewById(R.id.MapView);
+        mapViewContainer.addView(mapView);
+        return v;
     }
 }
