@@ -1,10 +1,14 @@
 package com.example.myapplication.ui.indoor;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -19,14 +23,16 @@ public class IndoorFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        IndoorViewModel notificationsViewModel =
+        IndoorViewModel indoorViewModel =
                 new ViewModelProvider(this).get(IndoorViewModel.class);
 
         binding = FragmentIndoorBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView textView = binding.textNotifications;
-        notificationsViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        final WebView webView = binding.indoorNavi;
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.loadUrl("http://10.0.2.2:3000/indoor");
+
         return root;
     }
 
