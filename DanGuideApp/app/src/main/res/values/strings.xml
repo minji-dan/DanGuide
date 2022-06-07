@@ -3,4 +3,7 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="menu_home">홈</string>
+    <string name="menu_outdoor">실외 길찾기</string>
+    <string name="menu_indoor">실내 길찾기</string>
 </resources>
